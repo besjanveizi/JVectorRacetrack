@@ -3,12 +3,26 @@
  */
 package it.unicam.cs.pa2021.jVectorRacetrack;
 
-public class App {
-    public String getGreeting() {
-        return "Hello World!";
-    }
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+
+import java.util.Objects;
+
+public class App extends Application {
 
     public static void main(String[] args) {
-        System.out.println(new App().getGreeting());
+        launch(args);
+    }
+
+    @Override
+    public void start(Stage primaryStage) throws Exception {
+        Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/start.fxml")));
+
+        primaryStage.setTitle("Vector Racetrack Pen & Paper Game");
+        primaryStage.setScene(new Scene(root, 300, 275));
+        primaryStage.show();
     }
 }

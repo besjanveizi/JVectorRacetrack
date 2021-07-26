@@ -10,10 +10,11 @@ plugins {
     // Apply the application plugin to add support for building a CLI application in Java.
     id 'java'
     id 'application'
+    id 'org.openjfx.javafxplugin' version '0.0.9'
 }
 
 ext {
-    javaMainClass = 'it.unicam.cs.pa2021.vectorRacetrack.Main'
+    javaMainClass = 'it.unicam.cs.pa2021.jVectorRacetrack.Main'
 }
 
 application {
@@ -22,6 +23,20 @@ application {
 }
 
 
+if (project.hasProperty("args")) {
+    ext.cmdargs = project.getProperty("args")
+} else {
+    ext.cmdargs = ""
+}
+
+task customRun(type: JavaExec) {
+    group = "Execution"
+    description = "Running with default values"
+    classpath = sourceSets.main.runtimeClasspath
+    main = javaMainClass
+    args cmdargs.split()
+}
+
 sourceCompatibility = 11
 targetCompatibility = 11
 
@@ -29,11 +44,18 @@ repositories {
     mavenCentral()
 }
 
+
+javafx {
+    version = "11.0.2"
+    modules = [ 'javafx.controls', 'javafx.fxml' ]
+}
+
 dependencies {
+    implementation 'org.testng:testng:7.1.0'
+
     // Use JUnit test framework.
     testImplementation 'junit:junit:4.13'
 
     // This dependency is used by the application.
     implementation 'com.google.guava:guava:29.0-jre'
 }
-
