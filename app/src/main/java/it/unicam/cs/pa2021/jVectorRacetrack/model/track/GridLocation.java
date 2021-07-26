@@ -85,50 +85,19 @@ public class GridLocation {
      * @throws IllegalArgumentException in case the locations are not inline (neither vertically nor horizontally).
      */
     public List<GridLocation> getInlineLocationsUpTo(GridLocation that) throws IllegalArgumentException {
-        if (this.isVerticalTo(that)) return getVerticalLocationsUpTo(that);
-        else if (this.isHorizontalTo(that)) return getHorizontalLocationsUpTo(that);
+        if (this.isVerticalTo(that))
+            return getInlineLocationsUpTo(that, Math.max(this.getRow(), that.getRow()), Math.min(this.getRow(), that.getRow()));
+        else if (this.isHorizontalTo(that))
+            return getInlineLocationsUpTo(that, Math.max(this.getCol(), that.getCol()), Math.min(this.getCol(), that.getCol()));
         else throw new IllegalArgumentException("The locations are not inline with each other");
     }
 
-    /**
-     * Return all the locations inline horizontally from the called <code>GridLocation</code>
-     * to the given one.
-     * The locations will be organized in order starting from the one the method is called on,
-     * until the given <code>GridLocation</code> considering the <code>x</code> coordinate.
-     * @param that given <code>GridLocation</code>
-     * @return a list with all the locations ordered from the one the method is called on,
-     * until the given <code>GridLocation</code>.
-     */
-    public List<GridLocation> getHorizontalLocationsUpTo(GridLocation that) {
+    private List<GridLocation> getInlineLocationsUpTo(GridLocation that, int max, int min) {
         List<GridLocation> list = new ArrayList<>();
-        int max = Math.max(this.getCol(), that.getCol());
-        int min = Math.min(this.getCol(), that.getCol());
-        for (int r = min; r <= max; r++) {
-            list.add(new GridLocation(this.getRow(), r));
+        for (int i = min; i <= max; i++) {
+            list.add(new GridLocation(isHorizontalTo(that) ? this.getRow() : i, isVerticalTo(that) ? this.getCol() : i));
         }
-        if (this.getCol() == max) {
-            Collections.reverse(list);
-        }
-        return list;
-    }
-
-    /**
-     * Return all the locations inline vertically from the called <code>GridLocation</code>
-     * to the given one.
-     * The locations will be organized in order starting from the one the method is called on,
-     * until the given <code>GridLocation</code> considering the <code>y</code> coordinate.
-     * @param that given <code>GridLocation</code>
-     * @return a list with all the locations ordered from the one the method is called on,
-     * until the given <code>GridLocation</code>.
-     */
-    public List<GridLocation> getVerticalLocationsUpTo(GridLocation that) {
-        List<GridLocation> list = new ArrayList<>();
-        int max = Math.max(this.getRow(), that.getRow());
-        int min = Math.min(this.getRow(), that.getRow());
-        for (int c = min; c <= max; c++) {
-            list.add(new GridLocation(c, this.getCol()));
-        }
-        if (this.getRow() == max) {
+        if ((isVerticalTo(that) ? this.getRow() : this.getCol()) == max) {
             Collections.reverse(list);
         }
         return list;
@@ -187,9 +156,9 @@ public class GridLocation {
 
     private Optional<GridLocation> getNeighbour(int rowBound, int colBound, int dx, int dy) {
         int newR = row +dy;
-        int newY = col +dx;
-        if ((0<= newR)&&(newR<rowBound)&&(0<=newY)&&(newY<colBound)) {
-            return Optional.of(new GridLocation(newR,newY));
+        int newC = col +dx;
+        if ((0<= newR)&&(newR<rowBound)&&(0<=newC)&&(newC<colBound)) {
+            return Optional.of(new GridLocation(newR,newC));
         } else {
             return Optional.empty();
         }

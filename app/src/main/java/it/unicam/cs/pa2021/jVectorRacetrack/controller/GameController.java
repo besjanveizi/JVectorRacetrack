@@ -28,13 +28,16 @@ public abstract class GameController implements GameEngine {
     private GridRacetrack track;
     private final int numPlayers;
     protected final List<Player<GridLocation>> players;
-    protected int currentPlayer = 0;
+    private int currentPlayer = 0;
+   // private List<GameUpdateListener>
+    private final GameUpdateSupport gameUpdatesupport;
 
     public GameController(String trackFilePath, int numPlayers) {
         this.trackFilePath = trackFilePath;
         this.numPlayers = numPlayers;
         this.players = new LinkedList<>();
         setupLogger();
+        gameUpdatesupport = new GameUpdateSupport();
     }
 
     @Override
@@ -47,22 +50,24 @@ public abstract class GameController implements GameEngine {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        controllerLogger.info("\nChosen track file: "+ trackFilePath + "\n");
+        controllerLogger.info("Chosen total number of players: "+ numPlayers + "\n\n");
         loadPlayers();
         status = GameStatus.PLAYING;
         handleTurn();
     }
 
     private void handleTurn() {
-        controllerLogger.info("======================================="
+        controllerLogger.fine("======================================="
                 + "\n\tGAME START"
                 + "\n=======================================");
-        while (!isEnded() && turn <= MAX_TURNS) {
+        while (isGameStillOn() && turn <= MAX_TURNS) {
             if (!currentPlayer().hasFinished()){
                 try {
                     Cell<GridLocation> chosenPosition = currentPlayer().choseNextPosition();
                     if (!currentPlayer().isLegal(chosenPosition)) continue;
 
-                    controllerLogger.info("\n____________________________" +
+                    controllerLogger.fine("\n____________________________" +
                             "\nTURN #"+turn +
                             "\nPLAYER: " + currentPlayer().getName() +
                             "\nSTATUS: " + currentPlayer().getStatus() +
@@ -70,27 +75,32 @@ public abstract class GameController implements GameEngine {
 
                     currentPlayer().move(chosenPosition);
 
-                    controllerLogger.info("\nCHOSEN: " + chosenPosition +
+                    controllerLogger.fine("\nCHOSEN: " + chosenPosition +
                             "\nSTATUS: " + currentPlayer().getStatus());
                     if (currentPlayer().isCrashed()) {
-                        controllerLogger.info(" in " + chosenPosition);
+                        controllerLogger.fine(" in " + chosenPosition);
                     }
 
                 } catch (IndexOutOfBoundsException e) {
-                    controllerLogger.info("\n____________________________" +
+                    controllerLogger.fine("\n____________________________" +
                             "\nTURN #"+turn +
                             "\nPLAYER: " + currentPlayer().getName() +
                             "\nCURRENT: " + currentPlayer().getCurrentPosition() +
                             "\nSTATUS: " + currentPlayer().getStatus() +
                             " trying to go outside the map");
-                    changePlayer();
+                    handleNextTurn();
                     continue;
                 }
             }
-            checkIfGameEnded(players);
-            changePlayer();
+            handleNextTurn();
         }
         results = new GameResults(players);
+        controllerLogger.log(Level.FINE, ""+ this.getResults());
+    }
+
+    private void handleNextTurn() {
+        checkIfGameEnded(players);
+        if (isGameStillOn()) changePlayer();
     }
 
     private void loadRaceTrack(String trackFilePath) throws IOException {
@@ -130,13 +140,8 @@ public abstract class GameController implements GameEngine {
         return status;
     }
 
-    /**
-     * Checks if the game is ended
-     * @return true if the game is ended, otherwise false.
-     * @see GameStatus
-     */
-    public final boolean isEnded() {
-        return status() == GameStatus.END;
+    private boolean isGameStillOn() {
+        return status() != GameStatus.END;
     }
 
     private void checkIfGameEnded(List<Player<GridLocation>> players) {
@@ -193,5 +198,15 @@ public abstract class GameController implements GameEngine {
             }
         });
         controllerLogger.addHandler(ch);
+    }
+
+    @Override
+    public void addListener(GameUpdateListener listener) {
+        this.gameUpdatesupport.addListener(listener);
+    }
+
+    @Override
+    public void removeListener(GameUpdateListener listener) {
+        this.gameUpdatesupport.removeListener(listener);
     }
 }

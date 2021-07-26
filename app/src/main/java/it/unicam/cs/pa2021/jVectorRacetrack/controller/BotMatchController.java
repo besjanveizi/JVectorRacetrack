@@ -1,9 +1,7 @@
 package it.unicam.cs.pa2021.jVectorRacetrack.controller;
 
 import it.unicam.cs.pa2021.jVectorRacetrack.model.player.BotPlayer;
-import it.unicam.cs.pa2021.jVectorRacetrack.model.track.Cell;
-import it.unicam.cs.pa2021.jVectorRacetrack.model.track.GridLocation;
-import it.unicam.cs.pa2021.jVectorRacetrack.model.track.Zone;
+import it.unicam.cs.pa2021.jVectorRacetrack.model.track.*;
 
 import java.util.Random;
 import java.util.Set;

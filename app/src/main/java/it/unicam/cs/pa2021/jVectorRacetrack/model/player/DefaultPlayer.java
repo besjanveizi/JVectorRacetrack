@@ -3,30 +3,31 @@ package it.unicam.cs.pa2021.jVectorRacetrack.model.player;
 import it.unicam.cs.pa2021.jVectorRacetrack.model.rules.DefaultRule;
 import it.unicam.cs.pa2021.jVectorRacetrack.model.rules.Rule;
 import it.unicam.cs.pa2021.jVectorRacetrack.model.track.*;
-import it.unicam.cs.pa2021.jVectorRacetrack.model.track.Vector;
 
 import java.util.*;
 
 /**
  * Represents a default <code>Player</code> in the game.
  */
-public abstract class DefaultPlayer implements Player<GridLocation>{
+public abstract class DefaultPlayer<L> implements Player<L>{
 
-    private final Racetrack<GridLocation> track;
-    private final List<Movement<GridLocation>> executedMovements;
-    private Cell<GridLocation> currentPosition;
-    private final Rule<GridLocation> defaultRule;
+    private final Racetrack<L> track;
+    private final List<Movement<L>> executedMovements;
+    private Cell<L> currentPosition;
+    private final Rule<L> defaultRule;
     private final Deque<Zone> targetStack;
     private PlayerStatus status;
     private int nCrashes;
     private int moves;
+
+    private final PlayerUpdateSupport<L> propertyChangeSupport;
 
     /**
      * Creates a new <code>DefaultPlayer</code>.
      * @param startPosition position the player starts the race.
      * @param track <code>Racetrack</code> where the <code>Player</code> is playing.
      */
-    public DefaultPlayer(Cell<GridLocation> startPosition, Racetrack<GridLocation> track) {
+    public DefaultPlayer(Cell<L> startPosition, Racetrack<L> track) {
         this.track = track;
         targetStack = track.getTargetStack();
         this.executedMovements = new ArrayList<>();
@@ -36,14 +37,15 @@ public abstract class DefaultPlayer implements Player<GridLocation>{
         status = PlayerStatus.PLAYING;
         nCrashes = 0;
         moves = 0;
+        propertyChangeSupport = new PlayerUpdateSupport<>();
     }
 
     public abstract String getName();
 
-    public abstract Cell<GridLocation> choseNextPosition() throws NoSuchElementException;
+    public abstract Cell<L> choseNextPosition() throws NoSuchElementException;
 
     @Override
-    public final List<Movement<GridLocation>> getExecutedMovements() {
+    public final List<Movement<L>> getExecutedMovements() {
         return executedMovements;
     }
 
@@ -51,29 +53,28 @@ public abstract class DefaultPlayer implements Player<GridLocation>{
      * Returns all the possible next cells that the <code>Player</code> can chose to move to in a turn.
      * @return a set of all the possible next cells to move to.
      */
-    protected final Set<Cell<GridLocation>> getAllPossibleNextCells() {
+    protected final Set<Cell<L>> getAllPossibleNextCells() {
+        Set<Cell<L>> allPossibleNextCells = Collections.emptySet();
         if (status == PlayerStatus.CRASHED || executedMovements.isEmpty()) {
-            return track.getNeighbourCells(currentPosition.getLocation());
+            allPossibleNextCells = track.getNeighbourCells(currentPosition.getLocation());
         }
         else {
-            Set<Cell<GridLocation>> allPossibleNextCells;
             try {
-                Cell<GridLocation> next = getLastMovement().getNextEndingCell();
+                Cell<L> next = getLastMovement().getNextEndingCell();
                 allPossibleNextCells = getLastMovement().apply(defaultRule);
                 if (next != null) allPossibleNextCells.add(next);
             } catch (IndexOutOfBoundsException e) {
                 setCrashed();
                 moves++;
-                return Collections.emptySet();
             }
-            return allPossibleNextCells;
         }
+        return allPossibleNextCells;
     }
 
     @Override
-    public final void move(Cell<GridLocation> chosenLocation) {
+    public final void move(Cell<L> chosenLocation) {
         if (status == PlayerStatus.CRASHED) return;
-        Movement<GridLocation> movement = new Vector(currentPosition, chosenLocation, track);
+        Movement<L> movement = createMovement(currentPosition, chosenLocation);
         checkTraversedCells(movement.getTraversedCells());
         if (isCrashed()) {
             moves++;
@@ -83,7 +84,9 @@ public abstract class DefaultPlayer implements Player<GridLocation>{
         moves++;
     }
 
-    private void checkTraversedCells(List<Cell<GridLocation>> traversedCells) {
+    public abstract Movement<L> createMovement(Cell<L> currentPosition, Cell<L> chosenLocation);
+
+    private void checkTraversedCells(List<Cell<L>> traversedCells) {
         checkIfCrashed(traversedCells);
         if (!isCrashed()) {
             checkIfNextTargetReached(traversedCells);
@@ -92,15 +95,20 @@ public abstract class DefaultPlayer implements Player<GridLocation>{
     }
 
     @Override
-    public final boolean isLegal(Cell<GridLocation> chosenCell) {
+    public final boolean isLegal(Cell<L> chosenCell) {
         if (!getAllPossibleNextCells().contains(chosenCell)) return false;
-        else if (status == PlayerStatus.CRASHED) status = PlayerStatus.PLAYING;
+        else if (status == PlayerStatus.CRASHED) {
+            PlayerStatus oldStatus = status;
+            status = PlayerStatus.PLAYING;
+            this.propertyChangeSupport.firePlayerStatusChanged(oldStatus, status);
+        }
         return true;
     }
 
-    private void doMove(Cell<GridLocation> newLoc, Movement<GridLocation> movement) {
+    private void doMove(Cell<L> newLoc, Movement<L> movement) {
         executedMovements.add(movement);
         this.currentPosition = newLoc;
+        // firePlayerMoved
     }
 
     @Override
@@ -109,7 +117,7 @@ public abstract class DefaultPlayer implements Player<GridLocation>{
     }
 
     @Override
-    public final Cell<GridLocation> getCurrentPosition() {
+    public final Cell<L> getCurrentPosition() {
         return currentPosition;
     }
 
@@ -141,22 +149,25 @@ public abstract class DefaultPlayer implements Player<GridLocation>{
         return this.targetStack.getFirst();
     }
 
-    private Movement<GridLocation> getLastMovement() {
+    private Movement<L> getLastMovement() {
         return executedMovements.get(executedMovements.size() - 1);
     }
 
-    private void checkIfNextTargetReached(List<Cell<GridLocation>> traversedCells) {
+    private void checkIfNextTargetReached(List<Cell<L>> traversedCells) {
         while (!targetStack.isEmpty()) {
             if (traversedCells.stream().anyMatch((c) -> c.getZone() == getNextTarget())) {
                 this.targetStack.pop();
+                // firePlayerTargetStackUpdate
             }
             else break;
         }
     }
 
-    private void checkIfCrashed(List<Cell<GridLocation>> traversedCells) {
+    private void checkIfCrashed(List<Cell<L>> traversedCells) {
         if (traversedCells.stream().anyMatch(( c -> c.getZone() == Zone.OUTSIDE))){
+            PlayerStatus oldStatus = status;
             setCrashed();
+            this.propertyChangeSupport.firePlayerStatusChanged(oldStatus, status);
         }
     }
 
@@ -167,8 +178,19 @@ public abstract class DefaultPlayer implements Player<GridLocation>{
 
     private void checkIfFinished() {
         if (targetStack.size() == 0) {
+            PlayerStatus oldStatus = status;
             status = PlayerStatus.FINISHED;
+            this.propertyChangeSupport.firePlayerStatusChanged(oldStatus, status);
         }
     }
 
+    @Override
+    public synchronized void addPlayerUpdateListener(PlayerUpdateListener<L> listener) {
+        this.propertyChangeSupport.addListener(listener);
+    }
+
+    @Override
+    public synchronized void removePlayerUpdateListener(PlayerUpdateListener<L> listener) {
+        this.propertyChangeSupport.removeListener(listener);
+    }
 }

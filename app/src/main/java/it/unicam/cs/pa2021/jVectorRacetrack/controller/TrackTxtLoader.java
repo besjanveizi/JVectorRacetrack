@@ -1,5 +1,5 @@
 package it.unicam.cs.pa2021.jVectorRacetrack.controller;
-import it.unicam.cs.pa2021.jVectorRacetrack.model.track.Zone;
+import it.unicam.cs.pa2021.jVectorRacetrack.model.track.*;
 
 import java.io.*;
 import java.util.logging.Level;

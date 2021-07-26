@@ -78,4 +78,8 @@ public interface Player<L> {
      * @param loc next location the <code>Player</code> wants to move to.
      */
     void move(Cell<L> loc);
+
+
+    void addPlayerUpdateListener(PlayerUpdateListener<L> listener);
+    void removePlayerUpdateListener(PlayerUpdateListener<L> listener);
 }

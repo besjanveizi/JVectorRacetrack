@@ -21,4 +21,8 @@ public interface GameEngine {
      * @see GameStatus
      */
     GameStatus status();
+
+    void addListener(GameUpdateListener listener);
+
+    void removeListener(GameUpdateListener listener);
 }
