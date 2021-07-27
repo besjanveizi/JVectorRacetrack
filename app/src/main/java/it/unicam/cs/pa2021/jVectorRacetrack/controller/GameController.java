@@ -2,6 +2,7 @@ package it.unicam.cs.pa2021.jVectorRacetrack.controller;
 
 import it.unicam.cs.pa2021.jVectorRacetrack.model.player.Player;
 import it.unicam.cs.pa2021.jVectorRacetrack.model.player.PlayerStatus;
+import it.unicam.cs.pa2021.jVectorRacetrack.model.player.PlayerUpdateListener;
 import it.unicam.cs.pa2021.jVectorRacetrack.model.track.Cell;
 import it.unicam.cs.pa2021.jVectorRacetrack.model.track.GridLocation;
 import it.unicam.cs.pa2021.jVectorRacetrack.model.track.GridRacetrack;
@@ -29,7 +30,7 @@ public abstract class GameController implements GameEngine {
     private final int numPlayers;
     protected final List<Player<GridLocation>> players;
     private int currentPlayer = 0;
-   // private List<GameUpdateListener>
+    private List<PlayerUpdateListener<GridLocation>> playerListeners = new LinkedList<>();
     private final GameUpdateSupport gameUpdatesupport;
 
     public GameController(String trackFilePath, int numPlayers) {

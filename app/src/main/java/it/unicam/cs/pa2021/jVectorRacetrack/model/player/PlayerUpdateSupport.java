@@ -4,7 +4,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-public class PlayerUpdateSupport<L> {
+public final class PlayerUpdateSupport<L> {
 
     private final List<PlayerUpdateListener<L>> listeners;
 
